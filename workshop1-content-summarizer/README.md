@@ -207,13 +207,20 @@ The clean, modern UI allows users to:
 
 ## 5. Code & Resources
 
+### GitHub Repository
+
+🔗 **Source Code**: [https://github.com/aakarshsak/ai-for-bharat/tree/master/workshop1-content-summarizer](https://github.com/aakarshsak/ai-for-bharat/tree/master/workshop1-content-summarizer)
+
 ### Project Structure
 
 ```
 homework/
-├── content_summarizer_app.py    # Streamlit frontend application
+├── content_summarizer_app.py    # Main Streamlit app
 ├── content_summarizer_lib.py    # Backend logic & AWS integration
+├── styles.py                    # CSS styles
+├── ui_components.py             # HTML components
 ├── requirements.txt             # Python dependencies
+├── screenshots/                 # App screenshots
 └── README.md                    # This documentation
 ```
 
@@ -222,115 +229,92 @@ homework/
 #### Content Extraction (content_summarizer_lib.py)
 
 ```python
-def fetch_content_from_url(url: str) -> str:
-    """
-    Fetch and extract readable text content from a given URL.
-    Uses BeautifulSoup to parse HTML and extract main content.
-    """
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) ...'
-    }
+HEADERS = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+}
+
+CONTENT_SELECTORS = [
+    'article', '[role="main"]', '.post-content', '.article-content',
+    '.entry-content', '.content', 'main', '.blog-post', '.post-body'
+]
+
+def fetch_content(url):
+    """Fetch and extract text content from a URL"""
+    resp = requests.get(url, headers=HEADERS, timeout=15)
+    resp.raise_for_status()
     
-    response = requests.get(url, headers=headers, timeout=15)
-    response.raise_for_status()
+    soup = BeautifulSoup(resp.content, 'html.parser')
     
-    soup = BeautifulSoup(response.content, 'html.parser')
+    # Remove junk elements
+    for tag in soup(['script', 'style', 'nav', 'footer', 'header', 'aside']):
+        tag.decompose()
     
-    # Remove non-content elements
-    for element in soup(['script', 'style', 'nav', 'footer', 'header']):
-        element.decompose()
-    
-    # Try to find main content using common selectors
-    content_selectors = ['article', '[role="main"]', '.post-content', 'main']
-    
-    for selector in content_selectors:
-        main_content = soup.select_one(selector)
-        if main_content:
+    # Find main content
+    content = None
+    for selector in CONTENT_SELECTORS:
+        content = soup.select_one(selector)
+        if content:
             break
     
-    return main_content.get_text(separator='\n', strip=True)
+    if not content:
+        content = soup.body or soup
+    
+    text = content.get_text(separator='\n', strip=True)
+    return text
 ```
 
 #### AI Summarization with Amazon Bedrock
 
 ```python
-def get_summary(content: str, summary_type: str) -> str:
-    """
-    Generate a summary using Amazon Bedrock's Claude model.
-    
-    Args:
-        content: The text content to summarize
-        summary_type: Either "one_line" or "detailed"
-    """
-    # Build prompt based on summary type
+def get_summary(content, summary_type):
+    """Generate summary using Bedrock"""
     if summary_type == "one_line":
-        prompt = f"""Please provide a single, concise one-line summary 
-        (maximum 2 sentences) of the following content..."""
+        prompt = f"Give a 1-2 sentence summary of this:\n\n{content}"
     else:
-        prompt = f"""Please provide a detailed summary in 2-3 paragraphs..."""
+        prompt = f"Summarize this in 2-3 paragraphs, covering the main points:\n\n{content}"
 
-    # Initialize Bedrock client
-    session = boto3.Session()
-    bedrock = session.client(service_name='bedrock-runtime')
+    bedrock = boto3.Session().client('bedrock-runtime')
     
-    # Call Claude model via Bedrock Converse API
     response = bedrock.converse(
         modelId="us.anthropic.claude-3-7-sonnet-20250219-v1:0",
         messages=[{"role": "user", "content": [{"text": prompt}]}],
-        inferenceConfig={
-            "maxTokens": 1000,
-            "temperature": 0.3,
-            "topP": 0.9,
-        },
+        inferenceConfig={"maxTokens": 1000, "temperature": 0.3}
     )
     
     return response['output']['message']['content'][0]['text']
 ```
 
-#### Streamlit UI Component
+#### Streamlit UI (content_summarizer_app.py)
 
 ```python
-# Summary Type Selection
+import streamlit as st
+import content_summarizer_lib as glib
+from styles import CSS
+from ui_components import HEADER, DIVIDER, FOOTER, section_label, summary_card, error_card
+
+st.set_page_config(page_title="Content Summarizer", page_icon="📝", layout="centered")
+st.markdown(CSS, unsafe_allow_html=True)
+
+# URL input
+url = st.text_input("URL", placeholder="https://example.com/blog/article")
+
+# Summary type selection
 summary_type = st.radio(
-    "Summary Type",
-    options=["one_line", "detailed"],
-    format_func=lambda x: "📌 Quick Summary" if x == "one_line" 
-                          else "📖 Detailed Summary",
+    "Type",
+    ["one_line", "detailed"],
+    format_func=lambda x: "📌 Quick Summary (1-2 sentences)" if x == "one_line" 
+                          else "📖 Detailed Summary (2-3 paragraphs)",
     horizontal=True
 )
 
-# Generate Summary Button
+# Handle submission
 if st.button("✨ Generate Summary", type="primary"):
-    with st.spinner("🔄 Fetching content and generating summary..."):
-        result = glib.summarize_url(url_input, summary_type)
-        st.success(f"**{result['title']}**\n\n{result['summary']}")
+    with st.spinner("Fetching and summarizing..."):
+        result = glib.summarize_url(url, summary_type)
+        st.markdown(summary_card(result['title'], result['summary']), unsafe_allow_html=True)
 ```
 
-### Installation & Setup
 
-```bash
-# Clone or navigate to the homework directory
-cd homework
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Configure AWS credentials (required for Bedrock access)
-aws configure
-
-# Run the application
-streamlit run content_summarizer_app.py
-```
-
-### Requirements
-
-```txt
-streamlit
-boto3
-botocore
-requests
-beautifulsoup4
-```
 
 ### AWS Permissions Required
 
@@ -351,16 +335,4 @@ Ensure your AWS IAM user/role has the following permissions:
     ]
 }
 ```
-
----
-
-## License
-
-This project is part of the AI for Bharat workshop materials.
-
----
-
-## Contact & Support
-
-For questions or issues, please refer to the workshop documentation or reach out to the workshop organizers.
 
