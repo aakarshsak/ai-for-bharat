@@ -7,7 +7,7 @@ from ui_components import (
     section_label, summary_card, error_card, preview_box
 )
 
-st.set_page_config(page_title="Content Summarizer", page_icon="📝", layout="centered")
+st.set_page_config(page_title="URL Post Summarizer", page_icon="📝", layout="centered")
 st.markdown(CSS, unsafe_allow_html=True)
 
 # Header

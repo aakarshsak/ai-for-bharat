@@ -2,8 +2,8 @@
 
 HEADER = """
 <div class="main-header">
-    <h1>📝 Content Summarizer</h1>
-    <p>Transform any blog, article, or post into a crisp summary</p>
+    <h1>📝 URL Post Summarizer</h1>
+    <p>Transform any blog or article URL into a crisp summary</p>
 </div>
 """
 

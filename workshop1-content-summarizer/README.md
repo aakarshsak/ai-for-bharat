@@ -1,6 +1,6 @@
-# 📝 Content Summarizer
+# 📝 URL Post Summarizer
 
-An AI-powered web application that transforms any blog post, article, or online content into concise summaries using Amazon Bedrock and Claude.
+An AI-powered web application that summarizes any blog post or article from a URL using Amazon Bedrock and Claude.
 
 ---
 
@@ -14,7 +14,7 @@ In today's information-rich digital landscape, professionals, researchers, and s
 - **Knowledge Curation**: Summarizing content manually for notes or sharing is tedious
 
 ### The Solution
-**Content Summarizer** is a web application that:
+**URL Post Summarizer** is a web application that:
 - Takes any public URL (blog post, article, news piece)
 - Automatically extracts the main content from the webpage
 - Uses AI to generate intelligent summaries in two formats:
@@ -157,7 +157,7 @@ The clean, modern UI allows users to:
 - Choose between quick or detailed summaries
 - Generate AI-powered summaries with one click
 
-![Content Summarizer Main Interface](screenshots/request.png)
+![URL Post Summarizer Main Interface](screenshots/request.png)
 
 #### Summary Result
 
@@ -292,7 +292,7 @@ import content_summarizer_lib as glib
 from styles import CSS
 from ui_components import HEADER, DIVIDER, FOOTER, section_label, summary_card, error_card
 
-st.set_page_config(page_title="Content Summarizer", page_icon="📝", layout="centered")
+st.set_page_config(page_title="URL Post Summarizer", page_icon="📝", layout="centered")
 st.markdown(CSS, unsafe_allow_html=True)
 
 # URL input
